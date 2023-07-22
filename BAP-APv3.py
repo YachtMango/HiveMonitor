@@ -1,6 +1,6 @@
-# from phew import logging, server, access_point, dns
-# from phew.template import render_template
-# from phew.server import redirect
+from phew import logging, server, access_point, dns
+from phew.template import render_template
+from phew.server import redirect
 from pimoroni import Button
 from picographics import PicoGraphics, DISPLAY_INKY_PACK
 import am2320
@@ -74,26 +74,26 @@ def clear():
     display.set_pen(15)
     display.clear()
 
-# DOMAIN = "KHF Apiary"  # This is the address that is shown on the Captive Portal
+DOMAIN = "KHF Apiary"  # This is the address that is shown on the Captive Portal
 
-# @server.route("/", methods=["GET"])
-# def index(request):
+@server.route("/", methods=["GET"])
+def index(request):
 async def dispvals():
     dtdisp = time.gmtime()
     dtdata = time.time()
     tnow = ('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]))
-    sensor.measure()
-    temp = sensor.temperature()
-    val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
-    dispval=(f'{val:.2f}')
+#     sensor.measure()
+#     temp = sensor.temperature()
+#     val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
+#     dispval=(f'{val:.2f}')
     clear()
     display.set_pen(BLACK)
     display.text('Timestamp = ' + str(dtdata),5,5,240,2)
     display.text('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,20,240,2)
     display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
     display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
-    display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
-    print(dispval)
+#     display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
+#     print(dispval)
     display.update()
     await uasyncio.sleep_ms(5000)
     
@@ -106,73 +106,73 @@ async def main():
         
 uasyncio.run(main())
     
-#     return render_template("index.html",temp=temp,dtdisp=tnow,val=dispval)
+    return render_template("index.html",temp=temp,dtdisp=tnow,val=dispval)
 
-# @server.route("/update",methods=['GET','POST'])
-# def update():
-#     dtdisp = time.gmtime()
-#     dtdata = time.time()
-#     sensor.measure()
-#     clear()
-#     display.set_pen(BLACK)
-#     display.text('Timestamp = ' + str(dtdata),5,5,240,2)
-#     display.text('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,20,240,2)
-#     display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
-#     display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
-#     display.text('Weight = '+ str(val)+' kg',5, 100, 240, 3)
-#     display.update()
-#     return render_template("index.html",dtdisp=dtdata,)
-# 
-# 
-# # microsoft windows redirects
-# @server.route("/ncsi.txt", methods=["GET"])
-# def hotspot(request):
-#     print(request)
-#     print("ncsi.txt")
-#     return "", 200
-# 
-# 
-# @server.route("/connecttest.txt", methods=["GET"])
-# def hotspot(request):
-#     print(request)
-#     print("connecttest.txt")
-#     return "", 200
-# 
-# 
-# @server.route("/redirect", methods=["GET"])
-# def hotspot(request):
-#     print(request)
-#     print("****************ms redir*********************")
-#     return redirect(f"http://{DOMAIN}/", 302)
-# 
-# # android redirects
-# @server.route("/generate_204", methods=["GET"])
-# def hotspot(request):
-#     print(request)
-#     print("******generate_204********")
-#     return redirect(f"http://{DOMAIN}/", 302)
-# 
-# # apple redir
-# @server.route("/hotspot-detect.html", methods=["GET"])
-# def hotspot(request):
-#     print(request)
-#     """ Redirect to the Index Page """
-#     return render_template("index.html")
-# 
-# 
-# @server.catchall()
-# def catch_all(request):
-#     print("***************CATCHALL***********************\n" + str(request))
-#     return redirect("http://" + DOMAIN + "/")
+@server.route("/update",methods=['GET','POST'])
+def update():
+    dtdisp = time.gmtime()
+    dtdata = time.time()
+    sensor.measure()
+    clear()
+    display.set_pen(BLACK)
+    display.text('Timestamp = ' + str(dtdata),5,5,240,2)
+    display.text('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,20,240,2)
+    display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
+    display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
+    display.text('Weight = '+ str(val)+' kg',5, 100, 240, 3)
+    display.update()
+    return render_template("index.html",dtdisp=dtdata,)
 
 
-# # Set to Accesspoint mode
-# # Change this to whatever Wifi SSID you wish
-# ap = access_point("KHF Apiary Monitoring", password="khf")
-# ip = ap.ifconfig()[0]
-# # Grab the IP address and store it
-# logging.info(f"starting DNS server on {ip}")
-# # # Catch all requests and reroute them
-# dns.run_catchall(ip)
-# server.run()                            # Run the server
-# logging.info("Webserver Started")
+# microsoft windows redirects
+@server.route("/ncsi.txt", methods=["GET"])
+def hotspot(request):
+    print(request)
+    print("ncsi.txt")
+    return "", 200
+
+
+@server.route("/connecttest.txt", methods=["GET"])
+def hotspot(request):
+    print(request)
+    print("connecttest.txt")
+    return "", 200
+
+
+@server.route("/redirect", methods=["GET"])
+def hotspot(request):
+    print(request)
+    print("****************ms redir*********************")
+    return redirect(f"http://{DOMAIN}/", 302)
+
+# android redirects
+@server.route("/generate_204", methods=["GET"])
+def hotspot(request):
+    print(request)
+    print("******generate_204********")
+    return redirect(f"http://{DOMAIN}/", 302)
+
+# apple redir
+@server.route("/hotspot-detect.html", methods=["GET"])
+def hotspot(request):
+    print(request)
+    """ Redirect to the Index Page """
+    return render_template("index.html")
+
+
+@server.catchall()
+def catch_all(request):
+    print("***************CATCHALL***********************\n" + str(request))
+    return redirect("http://" + DOMAIN + "/")
+
+
+# Set to Accesspoint mode
+# Change this to whatever Wifi SSID you wish
+ap = access_point("KHF Apiary Monitoring", password="khf")
+ip = ap.ifconfig()[0]
+# Grab the IP address and store it
+logging.info(f"starting DNS server on {ip}")
+# # Catch all requests and reroute them
+dns.run_catchall(ip)
+server.run()                            # Run the server
+logging.info("Webserver Started")

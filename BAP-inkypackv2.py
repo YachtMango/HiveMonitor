@@ -2,8 +2,8 @@
 # from phew import logging, server, access_point, dns
 # from phew.template import render_template
 # from phew.server import redirect
-from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY, PEN_P4
-from pimoroni import RGBLED, Button
+from picographics import PicoGraphics, DISPLAY_INKY_PACK
+from pimoroni import Button
 import am2320
 from hx711 import HX711
 import time
@@ -16,15 +16,12 @@ WTCF = 22339 #Scales Calibration Factor
 time.localtime()
 i2c = I2C(0,scl=Pin(5), sda=Pin(4),freq=400000)
 sensor = am2320.AM2320(i2c)
-display = PicoGraphics(display=DISPLAY_PICO_DISPLAY,pen_type=PEN_P4, rotate=0)
-display.set_backlight(0.5)
+display = PicoGraphics(display=DISPLAY_INKY_PACK)
 
-# Pico Display buttons
+# Inky Pack Buttons
 button_a = Button(12)
 button_b = Button(13)
-button_x = Button(14)
-button_y = Button(15)
-
+button_c = Button(14)
           
 class Scales(HX711):
     def __init__(self, d_out, pd_sck):
@@ -57,37 +54,12 @@ class Scales(HX711):
 
 scales = Scales(d_out=10, pd_sck=9)
 
-async def dispbuttons():
-    while True:
-        if button_a.read():
-            print("Tare")
-            scales.tare()
-#         elif button_b.read():
-#             print("B")
-#             dispvals()
-        await uasyncio.sleep_ms(50)
-        
+# Display setup Inky Pack
+BLACK = 0
+display.set_update_speed(2)
+display.set_font("bitmap6")#
 
-# Display setup Pico display
-WIDTH, HEIGHT = display.get_bounds() # set up constants for drawing
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(255, 255, 255)
-BLUE = display.create_pen(0,0,255)
-RED = display.create_pen(255,0,0)
-GREEN = display.create_pen(124,252,0)
-AMBER = display.create_pen(255,191,0)
-display.set_backlight(0.5)
-
-def clear():
-    display.set_pen(15)
-    display.clear()
-
-# DOMAIN = "KHF Apiary"  # This is the address that is shown on the Captive Portal
-
-# @server.route("/", methods=["GET"])
-# def index(request):
-
-async def dispvals():
+def measure():
     dtdisp = time.gmtime()
     dtdata = time.time()
     tnow = ('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]))
@@ -97,13 +69,41 @@ async def dispvals():
     dispval=(f'{val:.2f}')
     clear()
     display.set_pen(BLACK)
-#     display.text('Timestamp = ' + str(dtdata),5,5,240,2)
+    display.text('Tare',250,15,240,2)
+    display.text('Update',225,50,240,2)
     display.text('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,20,240,2)
     display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
     display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
     display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
-    print(temp)
     display.update()
+
+
+
+def clear():
+    display.set_pen(15)
+    display.clear()
+
+
+async def dispbuttons():
+    while True:
+        if button_a.read():
+            print("Tare")
+            scales.tare()
+        elif button_b.read():
+            print("B")
+            measure()
+        await uasyncio.sleep_ms(50)
+        
+
+
+# DOMAIN = "KHF Apiary"  # This is the address that is shown on the Captive Portal
+
+# @server.route("/", methods=["GET"])
+# def index(request):
+
+async def dispvals():
+#     print(temp)
+    measure()
     await uasyncio.sleep_ms(5000)
     
 async def main():
@@ -111,7 +111,7 @@ async def main():
     while True:
 #         print("running")
         uasyncio.create_task(dispvals())
-        await uasyncio.sleep_ms(5000)
+        await uasyncio.sleep_ms(120000)
         
 uasyncio.run(main())
     
