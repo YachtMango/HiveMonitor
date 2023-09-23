@@ -1,4 +1,4 @@
-#Pico and Inky Pack version showing Temperature, Humidity and Weight
+#Picow and Inky Pack version showing Temperature, Humidity and Weight & Int Temp
 #NAA July 2023
 #
 # 
@@ -9,20 +9,36 @@ from hx711 import HX711
 import time
 from utime import sleep_us
 from machine import I2C, Pin
-import uasyncio 
+import onewire, ds18x20
+import uasyncio
+from umqtt.simple import MQTTClient
+from phew import connect_to_wifi
+from khsecret import ssid,password
 
+# Network values
+MQTT_BROKER = "192.168.0.22"
+
+# Hive specfic values
 WTCF = 22339 #Scales Calibration Factor
+PUBLISH_TOPIC = b"Hivename"
 
 time.localtime()
 i2c = I2C(0,scl=Pin(5), sda=Pin(4),freq=400000)
 sensor = am2320.AM2320(i2c)
 display = PicoGraphics(display=DISPLAY_INKY_PACK)
+ds_pin = machine.Pin(16)
+ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
+roms = ds_sensor.scan()
 
 # Inky Pack Buttons
 button_a = Button(12)
 button_b = Button(13)
 button_c = Button(14)
-          
+
+# Connect to wifi network
+connect_to_wifi(ssid,password)
+
+    
 class Scales(HX711):
     def __init__(self, d_out, pd_sck):
         super(Scales, self).__init__(d_out, pd_sck)
@@ -60,9 +76,14 @@ display.set_update_speed(2)
 display.set_font("bitmap6")#
 
 def measure():
+    c = MQTTClient("testumqtt",MQTT_BROKER)
+    c.connect()
     dtdisp = time.gmtime()
     dtdata = time.time()
     tnow = ('Date = {:02d}/{:02d}/{:04d} {:02d}:{:02d}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]))
+    ds_sensor.convert_temp()
+    for rom in roms:
+        itemp = ds_sensor.read_temp(rom)
     sensor.measure()
     temp = sensor.temperature()
     val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
@@ -74,8 +95,11 @@ def measure():
     display.text('Date = {:02d}/{:02d}/{:04d} {:02d}:{:02d}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,5,240,2)
     display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
     display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
-    display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
+    display.text('Int Temp = '+ str(itemp) + ' C',5, 100, 240, 3)
+#     display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
     display.update()
+    c.publish(PUBLISH_TOPIC,str(itemp),qos=1)
+    c.disconnect()
 
 
 def clear():
@@ -92,7 +116,7 @@ async def dispbuttons():
         
 async def dispvals():
     measure()
-    await uasyncio.sleep_ms(5000)
+    await uasyncio.sleep_ms(50)
     
 async def main():
     uasyncio.create_task(dispbuttons())

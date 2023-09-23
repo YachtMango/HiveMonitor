@@ -1,28 +1,35 @@
-#Pico and Inky Pack version showing Temperature, Humidity and Weight
-#NAA July 2023
-#
-# 
-from picographics import PicoGraphics, DISPLAY_INKY_PACK
-from pimoroni import Button
+# Hive temp/humidity/weight monitoring with time or timestamps using Badger2040W.
+import badger2040
+import badger_os
 import am2320
 from hx711 import HX711
-import time
+# import ntptime
+from time import sleep
 from utime import sleep_us
 from machine import I2C, Pin
-import uasyncio 
+from pcf85063a import PCF85063A
+import _thread
 
 WTCF = 22339 #Scales Calibration Factor
 
-time.localtime()
+# Display Setup
+display = badger2040.Badger2040()
+display.led(18)
+display.set_update_speed(2)
+# sleep(5)
+# Connects to the wireless network. Ensure you have entered your details in WIFI_CONFIG.py :).
+# display.connect()
+
+# ntptime.settime()
+# time.localtime()
 i2c = I2C(0,scl=Pin(5), sda=Pin(4),freq=400000)
 sensor = am2320.AM2320(i2c)
-display = PicoGraphics(display=DISPLAY_INKY_PACK)
-
-# Inky Pack Buttons
-button_a = Button(12)
-button_b = Button(13)
-button_c = Button(14)
-          
+rtc_pcf85063a = PCF85063A(i2c)
+sleep(5)
+badger2040.pico_rtc_to_pcf()
+# badger2040.pcf_to_pico_rtc()
+# sleep(5)
+         
 class Scales(HX711):
     def __init__(self, d_out, pd_sck):
         super(Scales, self).__init__(d_out, pd_sck)
@@ -59,46 +66,41 @@ BLACK = 0
 display.set_update_speed(2)
 display.set_font("bitmap6")#
 
+def buttons():
+    while True:
+        if display.pressed(badger2040.BUTTON_A):
+#             print("Tare")
+            scales.tare()
+            measure()
+        elif display.pressed(badger2040.BUTTON_B):
+#             print("Update")
+            measure()
+    sleep(0.5)        
+    
 def measure():
-    dtdisp = time.gmtime()
-    dtdata = time.time()
-    tnow = ('Date = {:02d}/{:02d}/{:04d} {:02d}:{:02d}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]))
+    dtdisp = rtc_pcf85063a.datetime()
     sensor.measure()
     temp = sensor.temperature()
     val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
     dispval=(f'{val:.2f}')
     clear()
     display.set_pen(BLACK)
-    display.text('Update',225,16,240,2)
-    display.text('Tare',250,56,240,2)
+    display.text('Tare',17,115,240,2)
+    display.text('Update',122,115,240,2)
     display.text('Date = {:02d}/{:02d}/{:04d} {:02d}:{:02d}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]),5,5,240,2)
-    display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 50, 240, 3)
-    display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 75, 240, 3)
-    display.text('Weight = '+ str(dispval) + ' kg',5, 100, 240, 3)
+    display.text('Temp = '+ str(sensor.temperature()) + ' C',5, 25, 240, 3)
+    display.text('Humidity = '+ str(sensor.humidity()) + ' %',5, 50, 240, 3)
+    display.text('Weight = '+ str(dispval) + ' kg',5, 80, 240, 3)
+#     display.text('Weight = ' + ' kg',5, 80, 240, 3)
     display.update()
-
 
 def clear():
     display.set_pen(15)
     display.clear()
 
-async def dispbuttons():
-    while True:
-        if button_a.read():
-            measure()
-        elif button_b.read():
-            scales.tare()
-        await uasyncio.sleep_ms(50)
-        
-async def dispvals():
+_thread.start_new_thread(buttons,())
+
+while True:
+#     sleep(5)
     measure()
-    await uasyncio.sleep_ms(5000)
-    
-async def main():
-    uasyncio.create_task(dispbuttons())
-    while True:
-#         print("running")
-        uasyncio.create_task(dispvals())
-        await uasyncio.sleep_ms(3600000)
-        
-uasyncio.run(main())
+    sleep(3600)
