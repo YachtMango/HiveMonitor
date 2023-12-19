@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="utf-8">
+		<title>Hive Status</title>
+	<style>
+        body{background: skyblue;
+              font-family: Tahoma, Verdana, Arial, sans-serif;
+            }
+    </style>
+	</head>
+	<body>
+	<center>
+		<h1>Hive Status @ {{tnow}} </h1>
+		<hr />
+		<form action="/update/" method="post">
+		<button name="Update" type="submit">Update</button>
+		</form>
+		<h2>Hive Temperature</h2>
+		<p>Temperature = {{tempr}}</p>		
+		<h2>Hive Humididty</h2>
+		<p>Humididty = {{humr}}</p>
+	</center>
+	</body>
+</html>

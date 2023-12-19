@@ -78,7 +78,7 @@ DOMAIN = "KHF Apiary"  # This is the address that is shown on the Captive Portal
 
 @server.route("/", methods=["GET"])
 def index(request):
-async def dispvals():
+#async def dispvals():
     dtdisp = time.gmtime()
     dtdata = time.time()
     tnow = ('Date = {}/{}/{} {}:{}'.format(dtdisp[2], dtdisp[1], dtdisp[0], dtdisp[3], dtdisp[4]))

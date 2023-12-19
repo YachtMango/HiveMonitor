@@ -2,8 +2,7 @@
 import badger2040
 import badger_os
 import am2320
-from hx711 import HX711
-# import ntptime
+import nau7802mp
 from time import sleep
 from utime import sleep_us
 from machine import I2C, Pin
@@ -24,42 +23,22 @@ display.set_update_speed(2)
 # time.localtime()
 i2c = I2C(0,scl=Pin(5), sda=Pin(4),freq=400000)
 sensor = am2320.AM2320(i2c)
+scale = nau7802mp.NAU7802(i2c)
 rtc_pcf85063a = PCF85063A(i2c)
 sleep(5)
 badger2040.pico_rtc_to_pcf()
 # badger2040.pcf_to_pico_rtc()
 # sleep(5)
-         
-class Scales(HX711):
-    def __init__(self, d_out, pd_sck):
-        super(Scales, self).__init__(d_out, pd_sck)
-        self.offset = 0
 
-    def reset(self):
-        self.power_off()
-        self.power_on()
-
-    def tare(self):
-        self.offset = self.read()
-
-    def raw_value(self):
-        return self.read() - self.offset
-
-    def stable_value(self, reads=10, delay_us=500):
-        values = []
-        for _ in range(reads):
-            values.append(self.raw_value())
-            sleep_us(delay_us)
-        return self._stabilizer(values)
-
-    @staticmethod
-    def _stabilizer(values, deviation=10):
-        weights = []
-        for prev in values:
-            weights.append(sum([1 for current in values if prev == current == 0 or prev != 0 and abs(prev - current) / (abs(prev) / 100) <= deviation]))
-        return sorted(zip(values, weights), key=lambda x: x[1]).pop()[0]
-
-scales = Scales(d_out=10, pd_sck=9)
+#check scale is connected and working
+scalecon = scale.isConnected()
+print("Scale available:", scalecon)
+avail = scale.begin()
+# if avail() = False:
+#     scale.reset
+#     print("Scale resetting:", avail)
+# elif avail =True
+print("Scale Avail:", avail)
 
 # Display setup Inky Pack
 BLACK = 0
@@ -70,7 +49,7 @@ def buttons():
     while True:
         if display.pressed(badger2040.BUTTON_A):
 #             print("Tare")
-            scales.tare()
+            scale.tare()
             measure()
         elif display.pressed(badger2040.BUTTON_B):
 #             print("Update")
@@ -81,8 +60,10 @@ def measure():
     dtdisp = rtc_pcf85063a.datetime()
     sensor.measure()
     temp = sensor.temperature()
-    val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
+#    val = (scale.getWeight()/WTCF) # stable value divide by correction factor to display in kg
+    val = (scale.getWeight()) # stable value divide by correction factor to display in kg
     dispval=(f'{val:.2f}')
+    print(dispval)
     clear()
     display.set_pen(BLACK)
     display.text('Tare',17,115,240,2)
@@ -103,4 +84,4 @@ _thread.start_new_thread(buttons,())
 while True:
 #     sleep(5)
     measure()
-    sleep(3600)
+    sleep(6)

@@ -1,5 +1,6 @@
 from hx711 import HX711
 from utime import sleep_us
+from time import sleep
 
 WTCF = 22339 #Scales Calibration Factor
 
@@ -39,5 +40,5 @@ if __name__ == "__main__":
     while True:
         val = (scales.stable_value()/WTCF) # stable value divide by correction factor to display in kg
         print(f'{val:.2f}')
-        sleep_us(3000000)
+        sleep(3600)
 #     scales.power_off()
